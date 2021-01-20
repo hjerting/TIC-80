@@ -1,0 +1,300 @@
+-- title:  Space Invaders
+-- author: Jon Hjerting
+-- desc:   lesson15
+-- script: lua
+
+alien = {
+	columns = 8,
+	rows = 6,
+	spriteNumber = 16,
+	horisontalDistance = 12,
+	verticalDistance = 12,
+	direction = 1,
+	speed = 4,
+	vertSpeed = 4,
+	maxX = 232,
+	minX = 0
+}
+
+aliens = {
+}
+
+playerShip = {
+	
+	position = {
+		x = 120,
+		y = 128
+	},
+	
+	spriteNum = 0,
+	minX = 0,
+	maxX = 232,
+	speed = 1,
+	
+	bulletOffset = {
+		x = 4,
+		y = 6
+	}
+}
+
+bulletValues = {
+	length = 5,
+	colour = 14,
+	speed = 2,
+}
+
+playerBullets = {}
+maxPlayerBullets = 3
+-- initCount = 0
+
+
+-- initialisation
+
+function initialiseGame()
+	initPlayerBulletArray()
+	initAliens()
+end
+
+function initPlayerBulletArray()
+	-- initCount = initCount + 1
+	for bullet = 1, maxPlayerBullets do
+		playerBullets[bullet] = {
+			position = {
+				x = 0,
+				y = 0
+			},
+			active = false
+		}
+	end -- for
+end -- initialiseGame
+
+
+function initAliens()
+	-- for loop rows
+	for row = 1, alien.rows do
+		-- for loop columns
+		aliens[row] = {}
+		for column = 1, alien.columns do
+			aliens[row][column] = {
+				position = {
+				 x = (column - 1) * alien.horisontalDistance,
+					y = (row - 1) * alien.verticalDistance	
+				},
+				alive = true
+			}
+		end -- for column
+	end -- for row
+end -- initAliens
+
+initialiseGame()
+
+function TIC()
+
+	-- updating
+	movePlayerShip()
+		
+	checkPlayerFire()
+	movePlayerBullets()
+	moveAliens()
+	
+	-- drawing
+	cls(15)
+	
+	-- print(initCount, 120, 0)
+	
+	drawPlayerBullets()	
+	drawPlayerShip()
+	drawAliens()
+	
+end -- end TIC
+
+
+function movePlayerShip()
+
+	-- move left
+	left = btn(2)
+	if (left) 
+	then
+		playerShip.position.x = 
+			playerShip.position.x - playerShip.speed
+	end
+	
+	-- move right
+	right = btn(3)
+	if (right) then
+		playerShip.position.x = 
+			playerShip.position.x + playerShip.speed
+	end
+	
+	playerShip.position.x = checkLimits(
+		playerShip.position.x,
+		playerShip.minX,
+		playerShip.maxX
+	)
+	
+end -- movePlayerShip
+
+
+function checkLimits(value, min, max)
+	if (value < min) then
+		return min
+	end
+	
+	if (value > max) then
+		return max
+	end
+	
+	return value
+
+end -- checkLimits
+
+function checkPlayerFire()
+	-- check if the fire button is pressed
+	fire = btnp(4)
+	if (fire) then
+		-- if pressed make a bullet appear
+		-- at the player ship
+		for bullet = 1, #playerBullets do
+			currentBullet = playerBullets[bullet]
+			if (not currentBullet.active) then
+				currentBullet.position = {
+					x = playerShip.position.x + 
+						playerShip.bulletOffset.x,
+					y = playerShip.position.y + 
+						playerShip.bulletOffset.y
+				}
+				currentBullet.active = true
+				break
+			end
+		end -- for
+	end -- not active
+end -- checkPlayerFire
+
+function movePlayerBullets()
+	for bullet = 1, #playerBullets do
+		currentBullet = playerBullets[bullet]
+		if (currentBullet.active) then
+			-- move the bullet up the screen
+			currentBullet.position.y = 
+				currentBullet.position.y - bulletValues.speed
+			if (currentBullet.position.y < -bulletValues.length) then
+				currentBullet.active = false
+			end -- if
+		end -- if
+	end -- for bullet
+end -- movePlayerBullet
+
+function drawPlayerBullets()
+	for bullet = 1, #playerBullets do
+		currentBullet = playerBullets[bullet]
+		if currentBullet.active then
+			drawPlayerBullet(currentBullet)
+		end
+	end -- for loop
+end -- drawPlayerBullets
+
+function drawPlayerBullet(currentBullet)
+	
+	-- draw player bullet
+	-- line(startX, startY, endX, endY, colour)
+	line(
+		currentBullet.position.x,
+		currentBullet.position.y,
+		currentBullet.position.x,
+		currentBullet.position.y + bulletValues.length,
+		bulletValues.colour
+	)
+		
+end -- drawPlayerBullet
+
+function drawPlayerShip()
+		spr(
+			playerShip.spriteNum,
+			playerShip.position.x, 
+			playerShip.position.y,
+			0
+	)
+
+end -- drawPlayerShip
+
+function drawAliens()
+	for row = 1, alien.rows do
+		for column = 1, alien.columns do
+			if aliens[row][column].alive then
+				spr(alien.spriteNumber,
+					aliens[row][column].position.x,
+					aliens[row][column].position.y,
+					0
+				)
+			end -- if alive
+		end -- for column
+	end -- for row
+end -- end drawAliens
+
+function moveAliens()
+	
+	if aliensAtEdge() then
+		-- change direction
+		alien.direction = -alien.direction
+		
+		-- and move down
+		for row = 1, alien.rows do
+			for column = 1, alien.columns do
+		
+				if aliens[row][column].alive then
+				
+					aliens[row][column].position.y =
+						aliens[row][column].position.y +
+							alien.vertSpeed
+					
+			    end -- if
+		
+		    end -- for columns
+	
+	    end -- for row
+		
+	else
+        
+        for row = 1, alien.rows do
+			for column = 1, alien.columns do
+		
+				if aliens[row][column].alive then
+				
+					aliens[row][column].position.x =
+						aliens[row][column].position.x +
+						(alien.speed * alien.direction)
+					
+				end -- if
+				
+			end -- column
+		
+		end -- row
+    end -- if else
+end -- moveAliens
+
+
+function aliensAtEdge()
+	-- for each alien
+	for row = 1, alien.rows do
+		for column = 1, alien.columns do
+			-- if alien is alive
+			if aliens[row][column].alive then
+				-- if alien going right +1
+				if alien.direction == 1 then
+					-- if alien x + step > max then
+					if (aliens[row][column].position.x + alien.speed) > alien.maxX then           
+						return true
+					end -- if
+				-- else
+				else
+					-- if alien x - step < min then
+					if (aliens[row][column].position.x - alien.speed) < alien.minX then
+						return true
+					end -- if
+				end -- end if right else
+			end -- end if alive
+		end -- for column
+	end -- end for row
+	return false
+	
+end -- aliensAtEdge
